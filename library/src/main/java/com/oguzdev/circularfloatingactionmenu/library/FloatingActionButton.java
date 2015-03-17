@@ -12,6 +12,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
@@ -36,6 +37,7 @@ public class FloatingActionButton extends FrameLayout {
     private View contentView;
 
     private boolean systemOverlay;
+    private boolean movable;
 
     /**
      * Constructor that takes parameters collected using {@link FloatingActionMenu.Builder}
@@ -50,7 +52,8 @@ public class FloatingActionButton extends FrameLayout {
     public FloatingActionButton(Context context, ViewGroup.LayoutParams layoutParams, int theme,
                                 Drawable backgroundDrawable, int position, View contentView,
                                 FrameLayout.LayoutParams contentParams,
-                                boolean systemOverlay) {
+                                boolean systemOverlay,
+                                boolean movable) {
         super(context);
         this.systemOverlay = systemOverlay;
 
@@ -74,8 +77,9 @@ public class FloatingActionButton extends FrameLayout {
         }
         setClickable(true);
 
-        if(systemOverlay)
+        if(systemOverlay && movable) {
             setOnTouchListener(new TouchHandler());
+        }
 
         attach(layoutParams);
     }
@@ -236,6 +240,7 @@ public class FloatingActionButton extends FrameLayout {
         private View contentView;
         private LayoutParams contentParams;
         private boolean systemOverlay;
+        private boolean movable;
 
         public Builder(Context context) {
             this.context = context;
@@ -248,7 +253,7 @@ public class FloatingActionButton extends FrameLayout {
             setLayoutParams(layoutParams);
             setTheme(FloatingActionButton.THEME_LIGHT);
             setPosition(FloatingActionButton.POSITION_BOTTOM_RIGHT);
-            setSystemOverlay(false);
+            setSystemOverlay(false, false);
         }
 
         public Builder setLayoutParams(ViewGroup.LayoutParams params) {
@@ -287,18 +292,26 @@ public class FloatingActionButton extends FrameLayout {
 
         public Builder setSystemOverlay(boolean systemOverlay) {
             this.systemOverlay = systemOverlay;
+            this.movable = false;
+            return this;
+        }
+
+        public Builder setSystemOverlay(boolean systemOverlay, boolean movable) {
+            this.systemOverlay = systemOverlay;
+            this.movable = movable;
             return this;
         }
 
         public FloatingActionButton build() {
             return new FloatingActionButton(context,
-                                           layoutParams,
-                                           theme,
-                                           backgroundDrawable,
-                                           position,
-                                           contentView,
-                                           contentParams,
-                    systemOverlay);
+                                            layoutParams,
+                                            theme,
+                                            backgroundDrawable,
+                                            position,
+                                            contentView,
+                                            contentParams,
+                                            systemOverlay,
+                                            movable);
         }
 
         public static WindowManager.LayoutParams getDefaultSystemWindowParams(Context context) {
@@ -316,6 +329,7 @@ public class FloatingActionButton extends FrameLayout {
     }
 
     private class TouchHandler implements OnTouchListener {
+        private float MoveThreshold = 5;
         private float startX, startY;
         private boolean isMoved;
         @Override
@@ -324,30 +338,36 @@ public class FloatingActionButton extends FrameLayout {
 
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    setPressed(true);
                     startX = event.getRawX() - params.x;
                     startY = event.getRawY() - params.y;
                     break;
 
                 case MotionEvent.ACTION_MOVE:
-                    if(!isMoved)
+                    int newX = (int) (event.getRawX() - startX);
+                    if(Math.abs(params.x - newX) > MoveThreshold && !isMoved)
                         isMoved = true;
 
-                    params.x = (int)(event.getRawX() - startX);
-                    params.y = (int)(event.getRawY() - startY);
-                    getWindowManager().updateViewLayout(FloatingActionButton.this, params);
+                    if(isMoved) {
+                        params.x = (int) (event.getRawX() - startX);
+                        params.y = (int) (event.getRawY() - startY);
+                        getWindowManager().updateViewLayout(FloatingActionButton.this, params);
+                    }
                     break;
 
                 case MotionEvent.ACTION_UP:
+                    setPressed(false);
                     if(isMoved) {
                         isMoved = false;
-                        setPressed(false);
-                        return true;
+                    }
+                    else {
+                        performClick();
                     }
 
                     break;
             }
 
-            return false;
+            return true;
         }
     };
 }
