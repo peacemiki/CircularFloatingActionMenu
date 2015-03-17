@@ -8,6 +8,7 @@ import android.content.Context;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.os.Handler;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,7 +38,9 @@ public class FloatingActionButton extends FrameLayout {
     private View contentView;
 
     private boolean systemOverlay;
-    private boolean movable;
+
+    private HomeScreenDetector mHomeScreenDetector = new HomeScreenDetector();
+    private Handler mHandler = new Handler();
 
     /**
      * Constructor that takes parameters collected using {@link FloatingActionMenu.Builder}
@@ -82,6 +85,8 @@ public class FloatingActionButton extends FrameLayout {
         }
 
         attach(layoutParams);
+
+        mHomeScreenDetector.addListener(mHomeScreenListener);
     }
 
     /**
@@ -183,6 +188,8 @@ public class FloatingActionButton extends FrameLayout {
                 throw new SecurityException("Your application must have SYSTEM_ALERT_WINDOW " +
                         "permission to create a system window.");
             }
+
+            mHomeScreenDetector.startDetecting(getContext());
         }
         else {
             ((ViewGroup) getActivityContentView()).addView(this, layoutParams);
@@ -195,6 +202,7 @@ public class FloatingActionButton extends FrameLayout {
     public void detach() {
         if(systemOverlay) {
             getWindowManager().removeView(this);
+            mHomeScreenDetector.stopDetecting();
         }
         else {
             ((ViewGroup) getActivityContentView()).removeView(this);
@@ -368,6 +376,26 @@ public class FloatingActionButton extends FrameLayout {
             }
 
             return true;
+        }
+    };
+
+    private HomeScreenDetector.onHomeScreenListener mHomeScreenListener = new HomeScreenDetector.onHomeScreenListener() {
+        @Override
+        public void onPause() {
+            mHandler.post(new Runnable() {
+                public void run() {
+                    FloatingActionButton.this.setVisibility(View.GONE);
+                }
+            });
+        }
+
+        @Override
+        public void onResume() {
+            mHandler.post(new Runnable() {
+                public void run() {
+                    FloatingActionButton.this.setVisibility(View.VISIBLE);
+                }
+            });
         }
     };
 }

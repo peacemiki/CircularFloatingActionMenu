@@ -12,6 +12,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.SensorManager;
+import android.os.Handler;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -57,6 +58,8 @@ public class FloatingActionMenu {
     private FrameLayout overlayContainer;
 
     private OrientationEventListener orientationListener;
+
+    private Handler mHandler = new Handler();
 
     /**
      * Constructor that takes the parameters collected using {@link FloatingActionMenu.Builder}
@@ -142,6 +145,8 @@ public class FloatingActionMenu {
                 }
             };
             orientationListener.enable();
+
+            HomeScreenDetector.addListener(mHomeScreenListener);
         }
     }
 
@@ -730,4 +735,19 @@ public class FloatingActionMenu {
         return params;
     }
 
+    private HomeScreenDetector.onHomeScreenListener mHomeScreenListener = new HomeScreenDetector.onHomeScreenListener() {
+        @Override
+        public void onPause() {
+            mHandler.post(new Runnable() {
+                public void run() {
+                    if(isOpen())
+                        close(true);
+                }
+            });
+        }
+
+        @Override
+        public void onResume() {
+        }
+    };
 }
