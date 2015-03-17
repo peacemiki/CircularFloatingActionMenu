@@ -9,6 +9,7 @@ import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -72,6 +73,9 @@ public class FloatingActionButton extends FrameLayout {
             setContentView(contentView, contentParams);
         }
         setClickable(true);
+
+        if(systemOverlay)
+            setOnTouchListener(new TouchHandler());
 
         attach(layoutParams);
     }
@@ -303,11 +307,47 @@ public class FloatingActionButton extends FrameLayout {
                     size,
                     size,
                     WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, // z-ordering
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                     PixelFormat.TRANSLUCENT);
             params.format = PixelFormat.RGBA_8888;
             params.gravity = Gravity.TOP | Gravity.LEFT;
             return params;
         }
     }
+
+    private class TouchHandler implements OnTouchListener {
+        private float startX, startY;
+        private boolean isMoved;
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            WindowManager.LayoutParams params = (WindowManager.LayoutParams) getLayoutParams();
+
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    startX = event.getRawX() - params.x;
+                    startY = event.getRawY() - params.y;
+                    break;
+
+                case MotionEvent.ACTION_MOVE:
+                    if(!isMoved)
+                        isMoved = true;
+
+                    params.x = (int)(event.getRawX() - startX);
+                    params.y = (int)(event.getRawY() - startY);
+                    getWindowManager().updateViewLayout(FloatingActionButton.this, params);
+                    break;
+
+                case MotionEvent.ACTION_UP:
+                    if(isMoved) {
+                        isMoved = false;
+                        setPressed(false);
+                        return true;
+                    }
+
+                    break;
+            }
+
+            return false;
+        }
+    };
 }

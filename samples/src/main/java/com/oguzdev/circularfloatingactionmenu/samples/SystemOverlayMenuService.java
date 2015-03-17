@@ -169,8 +169,8 @@ public class SystemOverlayMenuService extends Service {
                 .addSubActionView(tcSub5, tcSub5.getLayoutParams().width, tcSub5.getLayoutParams().height)
                 .addSubActionView(tcSub6, tcSub6.getLayoutParams().width, tcSub6.getLayoutParams().height)
                 .setRadius(redActionMenuRadius)
-                .setStartAngle(0)
-                .setEndAngle(180)
+                .setStartAngle(270)
+                .setEndAngle(90)
                 .attachTo(topCenterButton)
                 .build();
 
